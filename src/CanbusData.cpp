@@ -182,7 +182,7 @@ void CanbusData::deleteTransferedData(const QStringList& listOfOids) {
 		deleteUri = uri;
 		deleteUri += listOfOids.at(i);
 		qDebug() << deleteUri;
-		QNetworkRequest request(uri);
+		QNetworkRequest request(deleteUri);
 		request.setRawHeader(HEADER_CANBUS_REQUEST,
 				QByteArray::number(CANBUS_REQUEST_DELETE_DATA));
 		QNetworkReply* reply = mNetworkAccessManager->deleteResource(request);
