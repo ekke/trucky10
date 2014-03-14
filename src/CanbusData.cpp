@@ -1,5 +1,3 @@
-
-
 #include "CanbusData.hpp"
 
 #include <QtNetwork/QNetworkReply>
@@ -8,6 +6,7 @@
 #include <bb/data/JsonDataAccess>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
 
 #include <qdebug.h>
 
@@ -25,7 +24,7 @@ CanbusData::CanbusData(QObject *parent) :
 	mInitialized = true;
 }
 
-void CanbusData::setUri(const QString& uri){
+void CanbusData::setUri(const QString& uri) {
 	mBaseUrl = uri;
 }
 
@@ -76,19 +75,11 @@ void CanbusData::onDataReply() {
 	qDebug() << response;
 	JsonDataAccess jda;
 	QVariant data;
-	QVariantList dataList;
 	if (successFromServer) {
 		data = jda.loadFromBuffer(response);
 		switch (canbusRequest) {
 		case CANBUS_REQUEST_NEXT_DATA:
-			emit responseData(data);
-			dataList = data.toList();
-			qDebug() << "got canbus data: #" << dataList.size();
-			for (int d = 0; d < dataList.size(); ++d) {
-				QVariantMap map;
-				map = dataList.at(d).toMap();
-				qDebug() << map;
-			}
+			processCanbusData(data);
 			break;
 		case CANBUS_REQUEST_DELETE_DATA:
 			//
@@ -98,7 +89,80 @@ void CanbusData::onDataReply() {
 			break;
 		}
 	}
+}
 
+void CanbusData::processCanbusData(QVariant& data) {
+	QStringList deleteOidList;
+	QVariantList dataList;
+	QVariantList canbusDataList;
+	dataList = data.toList();
+	qDebug() << "got canbus data: #" << dataList.size();
+	for (int d = 0; d < dataList.size(); ++d) {
+		QVariantMap map;
+		map = dataList.at(d).toMap();
+		QString oid;
+		oid = map.value("_id").toMap().value("$oid").toString();
+		deleteOidList << oid;
+		int sensor = map.value("sensor").toInt();
+		int value = map.value("value").toInt();
+		QVariantMap timeMap;
+		timeMap = map.value("time").toMap();
+		QString timestamp = timeMap.value("$date").toString();
+		QString timeString;
+		QStringList timeSplit;
+		timeSplit = timestamp.split("T");
+		if (timeSplit.size() == 2) {
+			timeString = timeSplit.at(1).left(8);
+		} else {
+			timeString = "00:00:00";
+		}
+		QString day;
+		day = timestamp.left(10);
+		qDebug() << "OID: " << oid << "sensor: " << sensor << " value: "
+				<< value << " timestamp: " << timestamp;
+		qDebug() << "day: " << day << " time: " << timeString;
+		QString sensorName;
+		QString imageName;
+		switch (sensor) {
+			case 16:
+				sensorName = "Clutch";
+				imageName = "clutch";
+				break;
+			case 5:
+				sensorName = "ETC Temperature";
+				imageName = "temperature";
+				break;
+			case 12:
+				sensorName = "RPM";
+				imageName = "rpm";
+				break;
+			case 13:
+				sensorName = "Speed km/h";
+				imageName = "speed";
+				break;
+			case 20:
+				sensorName = "Lights";
+				imageName = "lights";
+				break;
+			default:
+				sensorName = "unsupported signal ";
+				sensorName += QString::number(sensor);
+				imageName = "icon";
+				break;
+		}
+
+		QVariantMap canbusMap;
+		canbusMap.insert("timestamp", timestamp);
+		canbusMap.insert("sensor", sensor);
+		canbusMap.insert("sensorValue", value);
+		canbusMap.insert("sensorName",sensorName);
+		canbusMap.insert("imageName",imageName);
+		canbusMap.insert("day", day);
+		canbusMap.insert("timeString", timeString);
+		canbusDataList.append(canbusMap);
+	}
+	qDebug() << "datalist #:" << canbusDataList.size();
+	emit responseData(canbusDataList);
 }
 
 void CanbusData::deleteTransferedData(const QStringList& listOfOids) {

@@ -24,7 +24,7 @@ public:
 
 signals:
 
-	void responseData(const QVariant& data);
+	void responseData(const QVariantList& canbusData);
 
 private Q_SLOTS:
 
@@ -37,6 +37,7 @@ private:
 	QString mBaseUrl;
 
 	void deleteTransferedData(const QStringList& listOfOids);
+	void processCanbusData(QVariant& data);
 
 	virtual ~CanbusData();
 };
