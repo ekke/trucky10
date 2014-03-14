@@ -68,8 +68,10 @@ void CanbusData::onDataReply() {
 		}
 		reply->deleteLater();
 	}
+	QVariantList emptyList;
 	if (response.trimmed().isEmpty()) {
 		qDebug() << "no data";
+		emit responseData(emptyList);
 		return;
 	}
 	qDebug() << response;
@@ -174,14 +176,16 @@ void CanbusData::deleteTransferedData(const QStringList& listOfOids) {
 	uri += "canbus/";
 	uri += "values";
 	uri += "/";
+	//
 	for (int i = 0; i < listOfOids.size(); ++i) {
 		QString deleteUri;
 		deleteUri = uri;
 		deleteUri += listOfOids.at(i);
+		qDebug() << deleteUri;
 		QNetworkRequest request(uri);
 		request.setRawHeader(HEADER_CANBUS_REQUEST,
 				QByteArray::number(CANBUS_REQUEST_DELETE_DATA));
-		QNetworkReply* reply = mNetworkAccessManager->get(request);
+		QNetworkReply* reply = mNetworkAccessManager->deleteResource(request);
 		bool ok;
 		ok = connect(reply, SIGNAL(finished()), this, SLOT(onDataReply()));
 		if (!ok) {
