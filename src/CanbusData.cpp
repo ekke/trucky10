@@ -83,6 +83,7 @@ void CanbusData::onDataReply() {
 			break;
 		case CANBUS_REQUEST_DELETE_DATA:
 			//
+			qDebug() << "deleted ONE OID";
 			break;
 		default:
 			qDebug() << "wrong request code";
@@ -153,6 +154,7 @@ void CanbusData::processCanbusData(QVariant& data) {
 
 		QVariantMap canbusMap;
 		canbusMap.insert("timestamp", timestamp);
+		canbusMap.insert("oid",oid);
 		canbusMap.insert("sensor", sensor);
 		canbusMap.insert("sensorValue", value);
 		canbusMap.insert("sensorName",sensorName);
@@ -163,6 +165,7 @@ void CanbusData::processCanbusData(QVariant& data) {
 	}
 	qDebug() << "datalist #:" << canbusDataList.size();
 	emit responseData(canbusDataList);
+	deleteTransferedData(deleteOidList);
 }
 
 void CanbusData::deleteTransferedData(const QStringList& listOfOids) {
@@ -172,7 +175,9 @@ void CanbusData::deleteTransferedData(const QStringList& listOfOids) {
 	uri += "values";
 	uri += "/";
 	for (int i = 0; i < listOfOids.size(); ++i) {
-		uri += listOfOids.at(i);
+		QString deleteUri;
+		deleteUri = uri;
+		deleteUri += listOfOids.at(i);
 		QNetworkRequest request(uri);
 		request.setRawHeader(HEADER_CANBUS_REQUEST,
 				QByteArray::number(CANBUS_REQUEST_DELETE_DATA));

@@ -1,10 +1,24 @@
 import bb.cascades 1.2
+import bb.system 1.2
 
 Page {
     id: canbusListPage
     titleBar: TitleBar {
         title: "Last tracked from CAN-Bus"
     }
+    attachedObjects: [
+        SystemToast {
+            id: toastInfo
+            property bool waiting: false
+            body: "Getting data from CAN Bus Interface ..."
+            icon: "asset:///images/icon.png"
+            onFinished: {
+                if(waiting){
+                    toastInfo.show()
+                }
+            }
+        }
+    ]
     actions: [
         ActionItem {
             title: "get data"
@@ -12,6 +26,14 @@ Page {
             ActionBar.placement: ActionBarPlacement.OnBar
             onTriggered: {
                 canbusdata.askForNextData()
+                toastInfo.show()
+                toastInfo.waiting = true
+            }
+        },
+        DeleteActionItem {
+            title: "clear List"
+            onTriggered: {
+                dataModelCanbus.clear()
             }
         }
     ]
@@ -47,8 +69,9 @@ Page {
                                     spaceQuota: 0.5
                                 }
                                 ImageView {
-                                    imageSource: "asset:///images/"+ListItemData.imageName+".png"
+                                    imageSource: "asset:///images/" + ListItemData.imageName + ".png"
                                     verticalAlignment: VerticalAlignment.Center
+                                    horizontalAlignment: HorizontalAlignment.Center
                                     scalingMethod: ScalingMethod.AspectFit
                                     minHeight: 114
                                     maxHeight: 114
@@ -94,6 +117,17 @@ Page {
                                         verticalAlignment: VerticalAlignment.Center
                                     } // end timestamp
                                 } // secondRowContainer
+                                Container {
+                                    id: thirdRowContainer
+                                    bottomPadding: 10
+                                    Label {
+                                        text: ListItemData.oid
+                                        textStyle.fontSize: FontSize.XSmall
+                                        textStyle.textAlign: TextAlign.Right
+                                        textStyle.color: Application.themeSupport.theme.colorTheme.style == VisualStyle.Dark ? Color.LightGray : Color.DarkGray
+                                        verticalAlignment: VerticalAlignment.Center
+                                    } // end oid
+                                } // secondRowContainer
                             } // end rowsContainer
                         } // outerItemContainer
                     } // CustomListItem itemRoot
@@ -129,6 +163,8 @@ Page {
     }
     function onResponseData(data) {
         dataModelCanbus.insertList(data)
+        toastInfo.waiting = false
+        toastInfo.cancel()
     }
     onCreationCompleted: {
         canbusdata.responseData.connect(onResponseData)

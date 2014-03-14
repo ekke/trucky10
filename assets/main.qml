@@ -20,6 +20,7 @@ TabbedPane {
     id: rootPane
     property string conference: settingsPage.conference
     showTabsOnActionBar: true
+    
     Tab {
         id: homeTab
         title: "Home"
@@ -46,6 +47,14 @@ TabbedPane {
         }
     
     } // settingsTab
+    
+    onActiveTabChanged: {
+        if(activeTab == homeTab){
+            showTabsOnActionBar = true
+        } else {
+            showTabsOnActionBar = false
+        }
+    }
     
     onCreationCompleted: {
         //
